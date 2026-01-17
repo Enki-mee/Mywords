@@ -280,83 +280,60 @@
         <div class="posts-container" id="postsContainer"></div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, query, orderByChild, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration - SAME AS DASHBOARD
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXxxx-REPLACE-THIS-xxxx",
+            authDomain: "your-app.firebaseapp.com",
+            databaseURL: "https://your-app-default-rtdb.firebaseio.com",
+            projectId: "your-project-id",
+            storageBucket: "your-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:xxxxx"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
         let allPosts = [];
         let likedPosts = new Set();
         let currentUserEmail = localStorage.getItem('mywordsUserEmail') || 'user';
+        let currentUserId = currentUserEmail.replace(/[.@]/g, '_');
 
         function loadLikedPosts() {
-            const saved = localStorage.getItem('mywordsLikedPosts_' + currentUserEmail);
+            const saved = localStorage.getItem('mywordsLikedPosts_' + currentUserId);
             if (saved) {
                 likedPosts = new Set(JSON.parse(saved));
             }
         }
 
         function saveLikedPosts() {
-            localStorage.setItem('mywordsLikedPosts_' + currentUserEmail, JSON.stringify([...likedPosts]));
+            localStorage.setItem('mywordsLikedPosts_' + currentUserId, JSON.stringify([...likedPosts]));
         }
 
-        async function loadPosts() {
-            try {
-                // Check if window.storage exists
-                if (!window.storage) {
-                    console.error('Storage API not available');
-                    // Fallback to localStorage
-                    const localPosts = localStorage.getItem('mywordsPosts_shared');
-                    if (localPosts) {
-                        allPosts = JSON.parse(localPosts);
-                    } else {
-                        allPosts = [];
-                    }
-                } else {
-                    const result = await window.storage.get('all_posts', true);
-                    if (result && result.value) {
-                        allPosts = JSON.parse(result.value);
-                    } else {
-                        allPosts = [];
-                    }
-                }
-            } catch (e) {
-                console.log('Error loading posts:', e);
-                // Fallback to localStorage
-                const localPosts = localStorage.getItem('mywordsPosts_shared');
-                if (localPosts) {
-                    allPosts = JSON.parse(localPosts);
-                } else {
-                    allPosts = [];
-                }
-            }
+        function loadPosts() {
+            const postsRef = ref(database, 'posts');
+            const postsQuery = query(postsRef, orderByChild('timestamp'));
             
-            const count = allPosts.length;
-            document.getElementById('postsCount').textContent = 
-                count === 0 ? 'No posts yet' : 
-                count === 1 ? '1 post' : 
-                `${count} posts`;
-            
-            renderPosts();
-        }
+            onValue(postsQuery, (snapshot) => {
+                allPosts = [];
+                snapshot.forEach((childSnapshot) => {
+                    const post = childSnapshot.val();
+                    post.key = childSnapshot.key;
+                    allPosts.push(post);
+                });
 
-        async function savePosts() {
-            try {
-                if (!window.storage) {
-                    // Fallback to localStorage
-                    localStorage.setItem('mywordsPosts_shared', JSON.stringify(allPosts));
-                } else {
-                    await window.storage.set('all_posts', JSON.stringify(allPosts), true);
-                }
-            } catch (e) {
-                console.error('Error saving posts:', e);
-                // Fallback to localStorage
-                localStorage.setItem('mywordsPosts_shared', JSON.stringify(allPosts));
-            }
-        }
-
-        function sortPosts(posts, sortBy) {
-            if (sortBy === 'newest') {
-                return [...posts].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            } else {
-                return [...posts].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            }
+                const count = allPosts.length;
+                document.getElementById('postsCount').textContent = 
+                    count === 0 ? 'No posts yet' : 
+                    count === 1 ? '1 post' : 
+                    `${count} posts`;
+                
+                renderPosts();
+            });
         }
 
         function renderPosts() {
@@ -368,27 +345,27 @@
                     <div class="empty-state">
                         <h3>No Posts Yet</h3>
                         <p>Be the first to share something! Head to your dashboard to create a post.</p>
-                        <button onclick="goToDashboard()">Go to Dashboard</button>
+                        <button onclick="window.location.href='dashboard.html'">Go to Dashboard</button>
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = '';
-            const sortedPosts = sortPosts(allPosts, sortBy);
+            const sortedPosts = sortBy === 'newest' 
+                ? [...allPosts].reverse() 
+                : [...allPosts];
 
             sortedPosts.forEach(post => {
                 const postCard = document.createElement('div');
                 postCard.className = 'post-card';
-
                 const timeAgo = getTimeAgo(new Date(post.timestamp));
-                const isLiked = likedPosts.has(post.id);
+                const isLiked = likedPosts.has(post.key);
                 const likeCount = post.likes || 0;
 
                 const avatarContent = post.profilePic 
                     ? `background-image: url(${post.profilePic}); background-size: cover; background-position: center;` 
                     : '';
-                
                 const avatarPlaceholder = post.profilePic ? '' : '👤';
 
                 postCard.innerHTML = `
@@ -402,7 +379,7 @@
                     </div>
                     <div class="post-content">${post.content}</div>
                     <div class="post-actions">
-                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
+                        <button class="action-btn ${isLiked ? 'liked' : ''}" data-post-key="${post.key}">
                             ${isLiked ? '❤️' : '🤍'} Like ${likeCount > 0 ? `(${likeCount})` : ''}
                         </button>
                         <button class="action-btn">💬 Comment</button>
@@ -410,43 +387,35 @@
                     </div>
                 `;
 
+                const likeBtn = postCard.querySelector('.action-btn[data-post-key]');
+                likeBtn.addEventListener('click', () => toggleLike(post.key, post.likes || 0));
+
                 container.appendChild(postCard);
             });
         }
 
-        function toggleLike(postId) {
-            const post = allPosts.find(p => p.id === postId);
-            if (!post) return;
-
-            if (likedPosts.has(postId)) {
-                likedPosts.delete(postId);
-                post.likes = (post.likes || 1) - 1;
+        function toggleLike(postKey, currentLikes) {
+            const postRef = ref(database, 'posts/' + postKey);
+            
+            if (likedPosts.has(postKey)) {
+                likedPosts.delete(postKey);
+                update(postRef, { likes: Math.max(0, currentLikes - 1) });
             } else {
-                likedPosts.add(postId);
-                post.likes = (post.likes || 0) + 1;
+                likedPosts.add(postKey);
+                update(postRef, { likes: currentLikes + 1 });
             }
-
-            savePosts();
+            
             saveLikedPosts();
-            renderPosts();
         }
-
-        window.toggleLike = toggleLike;
 
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
-            
             if (seconds < 60) return 'Just now';
             if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
             if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
             if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
             return date.toLocaleDateString();
         }
-
-        function goToDashboard() {
-            window.location.href = 'dashboard.html';
-        }
-        window.goToDashboard = goToDashboard;
 
         document.getElementById('sortFilter').addEventListener('change', renderPosts);
 
@@ -460,8 +429,6 @@
 
         loadLikedPosts();
         loadPosts();
-
-        setInterval(loadPosts, 5000);
     </script>
 </body>
 </html>
