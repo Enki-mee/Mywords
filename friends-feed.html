@@ -298,15 +298,33 @@
 
         async function loadPosts() {
             try {
-                const result = await window.storage.get('all_posts', true);
-                if (result && result.value) {
-                    allPosts = JSON.parse(result.value);
+                // Check if window.storage exists
+                if (!window.storage) {
+                    console.error('Storage API not available');
+                    // Fallback to localStorage
+                    const localPosts = localStorage.getItem('mywordsPosts_shared');
+                    if (localPosts) {
+                        allPosts = JSON.parse(localPosts);
+                    } else {
+                        allPosts = [];
+                    }
+                } else {
+                    const result = await window.storage.get('all_posts', true);
+                    if (result && result.value) {
+                        allPosts = JSON.parse(result.value);
+                    } else {
+                        allPosts = [];
+                    }
+                }
+            } catch (e) {
+                console.log('Error loading posts:', e);
+                // Fallback to localStorage
+                const localPosts = localStorage.getItem('mywordsPosts_shared');
+                if (localPosts) {
+                    allPosts = JSON.parse(localPosts);
                 } else {
                     allPosts = [];
                 }
-            } catch (e) {
-                console.log('No posts yet');
-                allPosts = [];
             }
             
             const count = allPosts.length;
@@ -320,9 +338,16 @@
 
         async function savePosts() {
             try {
-                await window.storage.set('all_posts', JSON.stringify(allPosts), true);
+                if (!window.storage) {
+                    // Fallback to localStorage
+                    localStorage.setItem('mywordsPosts_shared', JSON.stringify(allPosts));
+                } else {
+                    await window.storage.set('all_posts', JSON.stringify(allPosts), true);
+                }
             } catch (e) {
                 console.error('Error saving posts:', e);
+                // Fallback to localStorage
+                localStorage.setItem('mywordsPosts_shared', JSON.stringify(allPosts));
             }
         }
 
