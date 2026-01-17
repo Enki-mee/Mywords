@@ -334,7 +334,25 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, push, onValue, query, orderByChild } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration - REPLACE WITH YOUR OWN
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXxxx-REPLACE-THIS-xxxx",
+            authDomain: "your-app.firebaseapp.com",
+            databaseURL: "https://your-app-default-rtdb.firebaseio.com",
+            projectId: "your-project-id",
+            storageBucket: "your-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:xxxxx"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
         let userData = {
             profilePic: null,
             bio: '',
@@ -342,25 +360,13 @@
             username: ''
         };
 
-        let posts = [];
         let currentUserEmail = localStorage.getItem('mywordsUserEmail') || 'user';
+        let currentUserId = currentUserEmail.replace(/[.@]/g, '_');
 
-        async function loadData() {
-            // Load user's personal data
-            try {
-                const userKey = 'user_' + currentUserEmail;
-                if (!window.storage) {
-                    const saved = localStorage.getItem(userKey);
-                    if (saved) {
-                        userData = JSON.parse(saved);
-                    }
-                } else {
-                    const result = await window.storage.get(userKey);
-                    if (result && result.value) {
-                        userData = JSON.parse(result.value);
-                    }
-                }
-                
+        function loadData() {
+            const saved = localStorage.getItem('mywordsUserData_' + currentUserId);
+            if (saved) {
+                userData = JSON.parse(saved);
                 if (userData.profilePic) {
                     document.getElementById('profilePic').src = userData.profilePic;
                     document.getElementById('profilePic').classList.remove('hidden');
@@ -373,74 +379,58 @@
                     document.body.style.backgroundColor = userData.backgroundColor;
                     document.getElementById('colorPicker').value = userData.backgroundColor;
                 }
-            } catch (e) {
-                console.log('First time user setup');
             }
 
-            // Load shared posts
-            await loadPosts();
+            loadPosts();
         }
 
-        async function loadPosts() {
-            try {
-                // Check if window.storage exists
-                if (!window.storage) {
-                    console.error('Storage API not available');
-                    // Fallback to localStorage
-                    const localPosts = localStorage.getItem('mywordsPosts_shared');
-                    if (localPosts) {
-                        posts = JSON.parse(localPosts);
-                    } else {
-                        posts = [];
+        function saveUserData() {
+            localStorage.setItem('mywordsUserData_' + currentUserId, JSON.stringify(userData));
+        }
+
+        function loadPosts() {
+            const postsRef = ref(database, 'posts');
+            const postsQuery = query(postsRef, orderByChild('timestamp'));
+            
+            onValue(postsQuery, (snapshot) => {
+                const container = document.getElementById('postsContainer');
+                container.innerHTML = '';
+                
+                const posts = [];
+                snapshot.forEach((childSnapshot) => {
+                    const post = childSnapshot.val();
+                    if (post.userId === currentUserId) {
+                        posts.push(post);
                     }
-                } else {
-                    const postsResult = await window.storage.get('all_posts', true);
-                    if (postsResult && postsResult.value) {
-                        posts = JSON.parse(postsResult.value);
-                    } else {
-                        posts = [];
-                    }
-                }
-                renderPosts();
-            } catch (e) {
-                console.log('Error loading posts:', e);
-                // Fallback to localStorage
-                const localPosts = localStorage.getItem('mywordsPosts_shared');
-                if (localPosts) {
-                    posts = JSON.parse(localPosts);
-                } else {
-                    posts = [];
-                }
-                renderPosts();
-            }
-        }
+                });
 
-        async function saveUserData() {
-            try {
-                const userKey = 'user_' + currentUserEmail;
-                if (!window.storage) {
-                    localStorage.setItem(userKey, JSON.stringify(userData));
-                } else {
-                    await window.storage.set(userKey, JSON.stringify(userData));
-                }
-            } catch (e) {
-                console.error('Error saving user data:', e);
-                const userKey = 'user_' + currentUserEmail;
-                localStorage.setItem(userKey, JSON.stringify(userData));
-            }
-        }
+                posts.reverse().forEach(post => {
+                    const postCard = document.createElement('div');
+                    postCard.className = 'post-card';
+                    const timeAgo = getTimeAgo(new Date(post.timestamp));
 
-        async function savePosts() {
-            try {
-                if (!window.storage) {
-                    localStorage.setItem('mywordsPosts_shared', JSON.stringify(posts));
-                } else {
-                    await window.storage.set('all_posts', JSON.stringify(posts), true);
+                    postCard.innerHTML = `
+                        <div class="post-header">
+                            <div class="post-avatar" style="${post.profilePic ? `background-image: url(${post.profilePic}); background-size: cover; background-position: center;` : 'background-color: #e5e7eb;'}"></div>
+                            <div class="post-info">
+                                <h4>${post.author}</h4>
+                                <div class="post-time">${timeAgo}</div>
+                            </div>
+                        </div>
+                        <div class="post-content">${post.content}</div>
+                        <div class="post-actions">
+                            <button class="action-btn">👍 Like</button>
+                            <button class="action-btn">💬 Comment</button>
+                            <button class="action-btn">🔗 Share</button>
+                        </div>
+                    `;
+                    container.appendChild(postCard);
+                });
+
+                if (posts.length === 0) {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem;">No posts yet. Create your first post above!</p>';
                 }
-            } catch (e) {
-                console.error('Error saving posts:', e);
-                localStorage.setItem('mywordsPosts_shared', JSON.stringify(posts));
-            }
+            });
         }
 
         document.getElementById('uploadBtn').addEventListener('click', () => {
@@ -451,87 +441,54 @@
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = async (event) => {
+                reader.onload = (event) => {
                     userData.profilePic = event.target.result;
                     document.getElementById('profilePic').src = event.target.result;
                     document.getElementById('profilePic').classList.remove('hidden');
                     document.getElementById('profilePicPlaceholder').classList.add('hidden');
-                    await saveUserData();
+                    saveUserData();
                 };
                 reader.readAsDataURL(file);
             }
         });
 
-        document.getElementById('saveBioBtn').addEventListener('click', async () => {
+        document.getElementById('saveBioBtn').addEventListener('click', () => {
             userData.bio = document.getElementById('bioText').value;
-            await saveUserData();
+            saveUserData();
             alert('Bio saved successfully!');
         });
 
-        document.getElementById('colorPicker').addEventListener('input', async (e) => {
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
             userData.backgroundColor = e.target.value;
             document.body.style.backgroundColor = e.target.value;
-            await saveUserData();
+            saveUserData();
         });
 
-        document.getElementById('postBtn').addEventListener('click', async () => {
+        document.getElementById('postBtn').addEventListener('click', () => {
             const postText = document.getElementById('postText').value.trim();
             if (!postText) {
                 alert('Please write something to post!');
                 return;
             }
 
-            const newPost = {
-                id: Date.now(),
+            const postsRef = ref(database, 'posts');
+            const newPostRef = push(postsRef);
+            
+            set(newPostRef, {
                 content: postText,
-                timestamp: new Date().toISOString(),
+                timestamp: Date.now(),
                 author: currentUserEmail.split('@')[0] || 'User',
                 bio: userData.bio || 'MyWords user',
-                profilePic: userData.profilePic,
-                userEmail: currentUserEmail
-            };
-
-            posts.unshift(newPost);
-            await savePosts();
-            renderPosts();
-            document.getElementById('postText').value = '';
-            alert('Post shared with everyone! 🎉');
-        });
-
-        function renderPosts() {
-            const container = document.getElementById('postsContainer');
-            container.innerHTML = '';
-
-            const userPosts = posts.filter(p => p.userEmail === currentUserEmail);
-
-            userPosts.forEach(post => {
-                const postCard = document.createElement('div');
-                postCard.className = 'post-card';
-                const timeAgo = getTimeAgo(new Date(post.timestamp));
-
-                postCard.innerHTML = `
-                    <div class="post-header">
-                        <div class="post-avatar" style="${post.profilePic ? `background-image: url(${post.profilePic}); background-size: cover; background-position: center;` : 'background-color: #e5e7eb;'}"></div>
-                        <div class="post-info">
-                            <h4>${post.author}</h4>
-                            <div class="post-time">${timeAgo}</div>
-                        </div>
-                    </div>
-                    <div class="post-content">${post.content}</div>
-                    <div class="post-actions">
-                        <button class="action-btn">👍 Like</button>
-                        <button class="action-btn">💬 Comment</button>
-                        <button class="action-btn">🔗 Share</button>
-                    </div>
-                `;
-
-                container.appendChild(postCard);
+                profilePic: userData.profilePic || null,
+                userId: currentUserId,
+                likes: 0
+            }).then(() => {
+                document.getElementById('postText').value = '';
+                alert('Post shared with everyone! 🎉');
+            }).catch((error) => {
+                alert('Error posting: ' + error.message);
             });
-
-            if (userPosts.length === 0) {
-                container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem;">No posts yet. Create your first post above!</p>';
-            }
-        }
+        });
 
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
