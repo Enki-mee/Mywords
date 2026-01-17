@@ -261,7 +261,6 @@
 
             setLoading(true);
             
-            // Save user credentials
             const users = JSON.parse(localStorage.getItem('mywordsUsers') || '{}');
             users[emailInput.value] = {
                 email: emailInput.value,
@@ -270,7 +269,6 @@
             };
             localStorage.setItem('mywordsUsers', JSON.stringify(users));
             
-            // Log user in
             localStorage.setItem('mywordsLoggedIn', 'true');
             localStorage.setItem('mywordsUserEmail', emailInput.value);
             
@@ -294,7 +292,6 @@
 
             setLoading(true);
             
-            // Check if user exists
             const users = JSON.parse(localStorage.getItem('mywordsUsers') || '{}');
             const user = users[emailInput.value];
             
@@ -310,7 +307,6 @@
                 return;
             }
             
-            // Log user in
             localStorage.setItem('mywordsLoggedIn', 'true');
             localStorage.setItem('mywordsUserEmail', emailInput.value);
             
@@ -323,7 +319,6 @@
             clearError();
             setLoading(true);
             
-            // Quick login with Google (simplified)
             localStorage.setItem('mywordsLoggedIn', 'true');
             localStorage.setItem('mywordsUserEmail', 'google-user@gmail.com');
             
