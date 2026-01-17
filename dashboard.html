@@ -349,21 +349,29 @@
             // Load user's personal data
             try {
                 const userKey = 'user_' + currentUserEmail;
-                const result = await window.storage.get(userKey);
-                if (result && result.value) {
-                    userData = JSON.parse(result.value);
-                    if (userData.profilePic) {
-                        document.getElementById('profilePic').src = userData.profilePic;
-                        document.getElementById('profilePic').classList.remove('hidden');
-                        document.getElementById('profilePicPlaceholder').classList.add('hidden');
+                if (!window.storage) {
+                    const saved = localStorage.getItem(userKey);
+                    if (saved) {
+                        userData = JSON.parse(saved);
                     }
-                    if (userData.bio) {
-                        document.getElementById('bioText').value = userData.bio;
+                } else {
+                    const result = await window.storage.get(userKey);
+                    if (result && result.value) {
+                        userData = JSON.parse(result.value);
                     }
-                    if (userData.backgroundColor) {
-                        document.body.style.backgroundColor = userData.backgroundColor;
-                        document.getElementById('colorPicker').value = userData.backgroundColor;
-                    }
+                }
+                
+                if (userData.profilePic) {
+                    document.getElementById('profilePic').src = userData.profilePic;
+                    document.getElementById('profilePic').classList.remove('hidden');
+                    document.getElementById('profilePicPlaceholder').classList.add('hidden');
+                }
+                if (userData.bio) {
+                    document.getElementById('bioText').value = userData.bio;
+                }
+                if (userData.backgroundColor) {
+                    document.body.style.backgroundColor = userData.backgroundColor;
+                    document.getElementById('colorPicker').value = userData.backgroundColor;
                 }
             } catch (e) {
                 console.log('First time user setup');
@@ -375,13 +383,34 @@
 
         async function loadPosts() {
             try {
-                const postsResult = await window.storage.get('all_posts', true);
-                if (postsResult && postsResult.value) {
-                    posts = JSON.parse(postsResult.value);
-                    renderPosts();
+                // Check if window.storage exists
+                if (!window.storage) {
+                    console.error('Storage API not available');
+                    // Fallback to localStorage
+                    const localPosts = localStorage.getItem('mywordsPosts_shared');
+                    if (localPosts) {
+                        posts = JSON.parse(localPosts);
+                    } else {
+                        posts = [];
+                    }
+                } else {
+                    const postsResult = await window.storage.get('all_posts', true);
+                    if (postsResult && postsResult.value) {
+                        posts = JSON.parse(postsResult.value);
+                    } else {
+                        posts = [];
+                    }
                 }
+                renderPosts();
             } catch (e) {
-                posts = [];
+                console.log('Error loading posts:', e);
+                // Fallback to localStorage
+                const localPosts = localStorage.getItem('mywordsPosts_shared');
+                if (localPosts) {
+                    posts = JSON.parse(localPosts);
+                } else {
+                    posts = [];
+                }
                 renderPosts();
             }
         }
@@ -389,17 +418,28 @@
         async function saveUserData() {
             try {
                 const userKey = 'user_' + currentUserEmail;
-                await window.storage.set(userKey, JSON.stringify(userData));
+                if (!window.storage) {
+                    localStorage.setItem(userKey, JSON.stringify(userData));
+                } else {
+                    await window.storage.set(userKey, JSON.stringify(userData));
+                }
             } catch (e) {
                 console.error('Error saving user data:', e);
+                const userKey = 'user_' + currentUserEmail;
+                localStorage.setItem(userKey, JSON.stringify(userData));
             }
         }
 
         async function savePosts() {
             try {
-                await window.storage.set('all_posts', JSON.stringify(posts), true);
+                if (!window.storage) {
+                    localStorage.setItem('mywordsPosts_shared', JSON.stringify(posts));
+                } else {
+                    await window.storage.set('all_posts', JSON.stringify(posts), true);
+                }
             } catch (e) {
                 console.error('Error saving posts:', e);
+                localStorage.setItem('mywordsPosts_shared', JSON.stringify(posts));
             }
         }
 
