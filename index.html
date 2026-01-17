@@ -182,7 +182,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Left image panel -->
         <div class="image-panel">
             <div class="image-overlay"></div>
             <div class="image-content">
@@ -190,28 +189,15 @@
             </div>
         </div>
 
-        <!-- Right login form -->
         <div class="form-panel">
             <h1 class="form-title">Login / Signup</h1>
             
             <p id="error" class="error"></p>
             
-            <input
-                type="email"
-                id="email"
-                placeholder="Email"
-                class="input-field"
-            />
-            
-            <input
-                type="password"
-                id="password"
-                placeholder="Password"
-                class="input-field"
-            />
+            <input type="email" id="email" placeholder="Email" class="input-field" />
+            <input type="password" id="password" placeholder="Password" class="input-field" />
             
             <button id="loginBtn" class="btn btn-login">Login</button>
-            
             <button id="signupBtn" class="btn btn-signup">Signup</button>
             
             <div class="divider">OR</div>
@@ -225,7 +211,6 @@
     </div>
 
     <script>
-        // Get elements
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const errorMsg = document.getElementById('error');
@@ -276,11 +261,22 @@
 
             setLoading(true);
             
-            // Simulate signup - Replace with actual Firebase auth
+            // Save user credentials
+            const users = JSON.parse(localStorage.getItem('mywordsUsers') || '{}');
+            users[emailInput.value] = {
+                email: emailInput.value,
+                password: passwordInput.value,
+                createdAt: new Date().toISOString()
+            };
+            localStorage.setItem('mywordsUsers', JSON.stringify(users));
+            
+            // Log user in
+            localStorage.setItem('mywordsLoggedIn', 'true');
+            localStorage.setItem('mywordsUserEmail', emailInput.value);
+            
             setTimeout(() => {
-                alert('Signup functionality requires Firebase configuration');
-                setLoading(false);
-            }, 500);
+                window.location.href = 'dashboard.html';
+            }, 300);
         }
 
         function handleLogin() {
@@ -298,30 +294,48 @@
 
             setLoading(true);
             
-            // Simulate login - Replace with actual Firebase auth
-            setTimeout(() => {
-                alert('Login functionality requires Firebase configuration');
+            // Check if user exists
+            const users = JSON.parse(localStorage.getItem('mywordsUsers') || '{}');
+            const user = users[emailInput.value];
+            
+            if (!user) {
+                setError('No account found with this email. Please sign up first.');
                 setLoading(false);
-            }, 500);
+                return;
+            }
+            
+            if (user.password !== passwordInput.value) {
+                setError('Incorrect password. Please try again.');
+                setLoading(false);
+                return;
+            }
+            
+            // Log user in
+            localStorage.setItem('mywordsLoggedIn', 'true');
+            localStorage.setItem('mywordsUserEmail', emailInput.value);
+            
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 300);
         }
 
         function handleGoogleLogin() {
             clearError();
             setLoading(true);
             
-            // Simulate Google login - Replace with actual Firebase auth
+            // Quick login with Google (simplified)
+            localStorage.setItem('mywordsLoggedIn', 'true');
+            localStorage.setItem('mywordsUserEmail', 'google-user@gmail.com');
+            
             setTimeout(() => {
-                alert('Google login functionality requires Firebase configuration');
-                setLoading(false);
-            }, 500);
+                window.location.href = 'dashboard.html';
+            }, 300);
         }
 
-        // Event listeners
         loginBtn.addEventListener('click', handleLogin);
         signupBtn.addEventListener('click', handleSignup);
         googleBtn.addEventListener('click', handleGoogleLogin);
 
-        // Allow Enter key to submit
         passwordInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleLogin();
         });
