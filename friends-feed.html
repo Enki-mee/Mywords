@@ -257,9 +257,9 @@
     <nav class="navbar">
         <h1>MyWords</h1>
         <div class="nav-links">
-            <a href="#" id="dashboardLink">Dashboard</a>
-            <a href="#" id="feedLink" class="active">Friends Feed</a>
-            <a href="#" id="logoutLink">Logout</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="friends-feed.html" class="active">Friends Feed</a>
+            <a href="index.html" id="logoutLink">Logout</a>
         </div>
     </nav>
 
@@ -277,36 +277,38 @@
             </select>
         </div>
 
-        <div class="posts-container" id="postsContainer">
-            <!-- Posts will appear here -->
-        </div>
+        <div class="posts-container" id="postsContainer"></div>
     </div>
 
     <script>
         let allPosts = [];
         let likedPosts = new Set();
+        let currentUserEmail = localStorage.getItem('mywordsUserEmail') || 'user';
 
-        // Load liked posts from localStorage
         function loadLikedPosts() {
-            const saved = localStorage.getItem('mywordsLikedPosts');
+            const saved = localStorage.getItem('mywordsLikedPosts_' + currentUserEmail);
             if (saved) {
                 likedPosts = new Set(JSON.parse(saved));
             }
         }
 
-        // Save liked posts to localStorage
         function saveLikedPosts() {
-            localStorage.setItem('mywordsLikedPosts', JSON.stringify([...likedPosts]));
+            localStorage.setItem('mywordsLikedPosts_' + currentUserEmail, JSON.stringify([...likedPosts]));
         }
 
-        // Load all posts from localStorage
-        function loadPosts() {
-            const posts = localStorage.getItem('mywordsPosts');
-            if (posts) {
-                allPosts = JSON.parse(posts);
+        async function loadPosts() {
+            try {
+                const result = await window.storage.get('all_posts', true);
+                if (result && result.value) {
+                    allPosts = JSON.parse(result.value);
+                } else {
+                    allPosts = [];
+                }
+            } catch (e) {
+                console.log('No posts yet');
+                allPosts = [];
             }
             
-            // Update posts count
             const count = allPosts.length;
             document.getElementById('postsCount').textContent = 
                 count === 0 ? 'No posts yet' : 
@@ -316,7 +318,14 @@
             renderPosts();
         }
 
-        // Sort posts
+        async function savePosts() {
+            try {
+                await window.storage.set('all_posts', JSON.stringify(allPosts), true);
+            } catch (e) {
+                console.error('Error saving posts:', e);
+            }
+        }
+
         function sortPosts(posts, sortBy) {
             if (sortBy === 'newest') {
                 return [...posts].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -325,7 +334,6 @@
             }
         }
 
-        // Render posts
         function renderPosts() {
             const container = document.getElementById('postsContainer');
             const sortBy = document.getElementById('sortFilter').value;
@@ -381,7 +389,6 @@
             });
         }
 
-        // Toggle like
         function toggleLike(postId) {
             const post = allPosts.find(p => p.id === postId);
             if (!post) return;
@@ -394,16 +401,13 @@
                 post.likes = (post.likes || 0) + 1;
             }
 
-            // Save changes
-            localStorage.setItem('mywordsPosts', JSON.stringify(allPosts));
+            savePosts();
             saveLikedPosts();
             renderPosts();
         }
 
-        // Make toggleLike available globally
         window.toggleLike = toggleLike;
 
-        // Get time ago
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             
@@ -414,38 +418,24 @@
             return date.toLocaleDateString();
         }
 
-        // Go to dashboard
         function goToDashboard() {
             window.location.href = 'dashboard.html';
         }
         window.goToDashboard = goToDashboard;
 
-        // Sort filter change
         document.getElementById('sortFilter').addEventListener('change', renderPosts);
-
-        // Navigation
-        document.getElementById('dashboardLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.href = 'dashboard.html';
-        });
-
-        document.getElementById('feedLink').addEventListener('click', (e) => {
-            e.preventDefault();
-            // Already on feed
-        });
 
         document.getElementById('logoutLink').addEventListener('click', (e) => {
             e.preventDefault();
             if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('mywordsLoggedIn');
                 window.location.href = 'index.html';
             }
         });
 
-        // Load data on page load
         loadLikedPosts();
         loadPosts();
 
-        // Auto-refresh every 5 seconds to show new posts
         setInterval(loadPosts, 5000);
     </script>
 </body>
