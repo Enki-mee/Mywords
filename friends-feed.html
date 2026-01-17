@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends Feed - MyWords</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .navbar {
+            background-color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h1 {
+            color: #1f2937;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #2563eb;
+        }
+
+        .nav-links a.active {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .feed-header {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .feed-header h2 {
+            color: #1f2937;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feed-header p {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        .filter-section {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .filter-section select {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .posts-count {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .posts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .post-card {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .post-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .post-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #e5e7eb;
+            margin-right: 1rem;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .post-info {
+            flex: 1;
+        }
+
+        .post-info h4 {
+            color: #1f2937;
+            font-size: 1.125rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .post-bio {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .post-time {
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+
+        .post-content {
+            color: #374151;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s;
+            padding: 0.5rem;
+        }
+
+        .action-btn:hover {
+            color: #2563eb;
+        }
+
+        .action-btn.liked {
+            color: #2563eb;
+        }
+
+        .empty-state {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 3rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .empty-state h3 {
+            color: #1f2937;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state button {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        .empty-state button:hover {
+            background-color: #1d4ed8;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+                font-size: 0.875rem;
+            }
+
+            .feed-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .filter-section {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>MyWords</h1>
+        <div class="nav-links">
+            <a href="#" id="dashboardLink">Dashboard</a>
+            <a href="#" id="feedLink" class="active">Friends Feed</a>
+            <a href="#" id="logoutLink">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="feed-header">
+            <h2>📱 Friends Feed</h2>
+            <p>See what everyone is sharing</p>
+        </div>
+
+        <div class="filter-section">
+            <div class="posts-count" id="postsCount">Loading posts...</div>
+            <select id="sortFilter">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+            </select>
+        </div>
+
+        <div class="posts-container" id="postsContainer">
+            <!-- Posts will appear here -->
+        </div>
+    </div>
+
+    <script>
+        let allPosts = [];
+        let likedPosts = new Set();
+
+        // Load liked posts from localStorage
+        function loadLikedPosts() {
+            const saved = localStorage.getItem('mywordsLikedPosts');
+            if (saved) {
+                likedPosts = new Set(JSON.parse(saved));
+            }
+        }
+
+        // Save liked posts to localStorage
+        function saveLikedPosts() {
+            localStorage.setItem('mywordsLikedPosts', JSON.stringify([...likedPosts]));
+        }
+
+        // Load all posts from localStorage
+        function loadPosts() {
+            const posts = localStorage.getItem('mywordsPosts');
+            if (posts) {
+                allPosts = JSON.parse(posts);
+            }
+            
+            // Update posts count
+            const count = allPosts.length;
+            document.getElementById('postsCount').textContent = 
+                count === 0 ? 'No posts yet' : 
+                count === 1 ? '1 post' : 
+                `${count} posts`;
+            
+            renderPosts();
+        }
+
+        // Sort posts
+        function sortPosts(posts, sortBy) {
+            if (sortBy === 'newest') {
+                return [...posts].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            } else {
+                return [...posts].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            }
+        }
+
+        // Render posts
+        function renderPosts() {
+            const container = document.getElementById('postsContainer');
+            const sortBy = document.getElementById('sortFilter').value;
+            
+            if (allPosts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No Posts Yet</h3>
+                        <p>Be the first to share something! Head to your dashboard to create a post.</p>
+                        <button onclick="goToDashboard()">Go to Dashboard</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            const sortedPosts = sortPosts(allPosts, sortBy);
+
+            sortedPosts.forEach(post => {
+                const postCard = document.createElement('div');
+                postCard.className = 'post-card';
+
+                const timeAgo = getTimeAgo(new Date(post.timestamp));
+                const isLiked = likedPosts.has(post.id);
+                const likeCount = post.likes || 0;
+
+                const avatarContent = post.profilePic 
+                    ? `background-image: url(${post.profilePic}); background-size: cover; background-position: center;` 
+                    : '';
+                
+                const avatarPlaceholder = post.profilePic ? '' : '👤';
+
+                postCard.innerHTML = `
+                    <div class="post-header">
+                        <div class="post-avatar" style="${avatarContent}">${avatarPlaceholder}</div>
+                        <div class="post-info">
+                            <h4>${post.author || 'Anonymous'}</h4>
+                            <div class="post-bio">${post.bio || 'MyWords user'}</div>
+                            <div class="post-time">${timeAgo}</div>
+                        </div>
+                    </div>
+                    <div class="post-content">${post.content}</div>
+                    <div class="post-actions">
+                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
+                            ${isLiked ? '❤️' : '🤍'} Like ${likeCount > 0 ? `(${likeCount})` : ''}
+                        </button>
+                        <button class="action-btn">💬 Comment</button>
+                        <button class="action-btn">🔗 Share</button>
+                    </div>
+                `;
+
+                container.appendChild(postCard);
+            });
+        }
+
+        // Toggle like
+        function toggleLike(postId) {
+            const post = allPosts.find(p => p.id === postId);
+            if (!post) return;
+
+            if (likedPosts.has(postId)) {
+                likedPosts.delete(postId);
+                post.likes = (post.likes || 1) - 1;
+            } else {
+                likedPosts.add(postId);
+                post.likes = (post.likes || 0) + 1;
+            }
+
+            // Save changes
+            localStorage.setItem('mywordsPosts', JSON.stringify(allPosts));
+            saveLikedPosts();
+            renderPosts();
+        }
+
+        // Make toggleLike available globally
+        window.toggleLike = toggleLike;
+
+        // Get time ago
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
+            return date.toLocaleDateString();
+        }
+
+        // Go to dashboard
+        function goToDashboard() {
+            window.location.href = 'dashboard.html';
+        }
+        window.goToDashboard = goToDashboard;
+
+        // Sort filter change
+        document.getElementById('sortFilter').addEventListener('change', renderPosts);
+
+        // Navigation
+        document.getElementById('dashboardLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'dashboard.html';
+        });
+
+        document.getElementById('feedLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            // Already on feed
+        });
+
+        document.getElementById('logoutLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Load data on page load
+        loadLikedPosts();
+        loadPosts();
+
+        // Auto-refresh every 5 seconds to show new posts
+        setInterval(loadPosts, 5000);
+    </script>
+</body>
+</html>

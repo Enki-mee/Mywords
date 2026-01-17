@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyWords - Login/Signup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .image-panel {
+            width: 50%;
+            background-image: url('https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .image-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .image-content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .image-title {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 0 1.5rem;
+        }
+
+        .form-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 50%;
+            background-color: white;
+            padding: 5rem;
+        }
+
+        .form-title {
+            font-size: 2.25rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+        }
+
+        .error {
+            color: #ef4444;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-login {
+            background-color: #2563eb;
+            color: white;
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-login:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+
+        .btn-signup {
+            background-color: #16a34a;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .btn-signup:hover:not(:disabled) {
+            background-color: #15803d;
+        }
+
+        .divider {
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+
+        .btn-google {
+            background-color: #dc2626;
+            color: white;
+        }
+
+        .btn-google:hover:not(:disabled) {
+            background-color: #b91c1c;
+        }
+
+        .footer-text {
+            margin-top: 1.5rem;
+            color: #6b7280;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .footer-text span {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .image-panel {
+                display: none;
+            }
+
+            .form-panel {
+                width: 100%;
+                padding: 3rem 1.5rem;
+            }
+
+            .form-title {
+                font-size: 1.875rem;
+            }
+
+            .image-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left image panel -->
+        <div class="image-panel">
+            <div class="image-overlay"></div>
+            <div class="image-content">
+                <h2 class="image-title">Welcome to MyWords</h2>
+            </div>
+        </div>
+
+        <!-- Right login form -->
+        <div class="form-panel">
+            <h1 class="form-title">Login / Signup</h1>
+            
+            <p id="error" class="error"></p>
+            
+            <input
+                type="email"
+                id="email"
+                placeholder="Email"
+                class="input-field"
+            />
+            
+            <input
+                type="password"
+                id="password"
+                placeholder="Password"
+                class="input-field"
+            />
+            
+            <button id="loginBtn" class="btn btn-login">Login</button>
+            
+            <button id="signupBtn" class="btn btn-signup">Signup</button>
+            
+            <div class="divider">OR</div>
+            
+            <button id="googleBtn" class="btn btn-google">Continue with Google</button>
+            
+            <p class="footer-text">
+                By continuing, you agree to our <span>Terms of Service</span> and <span>Privacy Policy</span>.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Get elements
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const errorMsg = document.getElementById('error');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const googleBtn = document.getElementById('googleBtn');
+
+        let loading = false;
+
+        function setError(message) {
+            errorMsg.textContent = message;
+            errorMsg.classList.add('show');
+        }
+
+        function clearError() {
+            errorMsg.textContent = '';
+            errorMsg.classList.remove('show');
+        }
+
+        function setLoading(state) {
+            loading = state;
+            loginBtn.disabled = state;
+            signupBtn.disabled = state;
+            googleBtn.disabled = state;
+        }
+
+        function validateEmail(email) {
+            return email.includes('@') && email.includes('.');
+        }
+
+        function handleSignup() {
+            clearError();
+            
+            if (!emailInput.value || !passwordInput.value) {
+                setError('Please fill in all fields');
+                return;
+            }
+
+            if (!validateEmail(emailInput.value)) {
+                setError('Please enter a valid email address');
+                return;
+            }
+
+            if (passwordInput.value.length < 6) {
+                setError('Password must be at least 6 characters');
+                return;
+            }
+
+            setLoading(true);
+            
+            // Simulate signup - Replace with actual Firebase auth
+            setTimeout(() => {
+                alert('Signup functionality requires Firebase configuration');
+                setLoading(false);
+            }, 500);
+        }
+
+        function handleLogin() {
+            clearError();
+            
+            if (!emailInput.value || !passwordInput.value) {
+                setError('Please fill in all fields');
+                return;
+            }
+
+            if (!validateEmail(emailInput.value)) {
+                setError('Please enter a valid email address');
+                return;
+            }
+
+            setLoading(true);
+            
+            // Simulate login - Replace with actual Firebase auth
+            setTimeout(() => {
+                alert('Login functionality requires Firebase configuration');
+                setLoading(false);
+            }, 500);
+        }
+
+        function handleGoogleLogin() {
+            clearError();
+            setLoading(true);
+            
+            // Simulate Google login - Replace with actual Firebase auth
+            setTimeout(() => {
+                alert('Google login functionality requires Firebase configuration');
+                setLoading(false);
+            }, 500);
+        }
+
+        // Event listeners
+        loginBtn.addEventListener('click', handleLogin);
+        signupBtn.addEventListener('click', handleSignup);
+        googleBtn.addEventListener('click', handleGoogleLogin);
+
+        // Allow Enter key to submit
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') passwordInput.focus();
+        });
+    </script>
+</body>
+</html>
